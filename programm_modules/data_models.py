@@ -1,5 +1,3 @@
-from time import sleep
-
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -57,4 +55,4 @@ class BookModel(db.Model):
     """
     User-friendly representation of the instance.
     """
-    return (f"Book: '{self.title}' (ISBN: {self.isbn}), published in {self.publication_year}, "
+    return f"Book: '{self.title}' (ISBN: {self.isbn}), published in {self.publication_year}"
