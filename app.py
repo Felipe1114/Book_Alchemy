@@ -3,9 +3,10 @@ import os
 import requests
 from programm_modules.data_models import db, AuthorModel, BookModel
 
-app = Flask(__name__)
-app.secret_key = "supersecretkey"  # Für Flash-Messages
+app = Flask(__name__) # init app
+app.secret_key = "supersecretkey"  # for flash-messeges
 
+# for the first sql init:
 if not os.path.exists("data"):
   os.makedirs("data")
 
@@ -21,9 +22,9 @@ db.init_app(app)
 #  db.create_all()
 
 
-#Route zum Hinzufügen eines Autors
 @app.route("/add_author", methods=["GET", "POST"])
 def add_author():
+  """Posts an author"""
   if request.method == "POST":
     name = request.form["name"]
     birth_date = request.form["birthdate"]
@@ -40,10 +41,10 @@ def add_author():
   return render_template("add_author.html")
 
 
-# 2️⃣ Route zum Hinzufügen eines Buches
 @app.route("/add_book", methods=["GET", "POST"])
 def add_book():
-  authors = AuthorModel.query.all()  # Alle Autoren aus der Datenbank holen
+  """Posts a book"""
+  authors = AuthorModel.query.all()  # get all authors
 
   if request.method == "POST":
     title = request.form["title"]
@@ -61,12 +62,12 @@ def add_book():
   return render_template("add_book.html", authors=authors)
 
 
-# 3️⃣ Route für die Home-Seite
 @app.route("/")
 def home():
+  """base route"""
   books = BookModel.query.all()
 
-  # Holt das Cover-Bild für jedes Buch über die ISBN
+  # gets coverbook für books
   for book in books:
     book.cover_url = get_book_cover(book.isbn)
 
@@ -75,30 +76,68 @@ def home():
   return render_template("home.html", books=books, sort_by=sort_by)
 
 
-# 🔹 Hilfsfunktion zum Abrufen des Buchcovers (nutzt die Open Library API)
 def get_book_cover(isbn):
+  """gets the book-covers for all books, from 'opernlibrary.org'"""
   url = f"https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg"
   response = requests.get(url)
 
   if response.status_code == 200:
-    return url  # Falls das Bild existiert, Rückgabe der URL
-  return "/static/no_cover.png"  # Falls kein Bild gefunden wird, Standardbild anzeigen
+    return url
+  return "/static/no_book_cover.jpg"  # if no cover book
 
 @app.route("/sort_books")
 def sort_books():
-    sort_by = request.args.get("sort_by", "title")  # Standard: Sortierung nach Titel
+  """sort books by 'title' or 'author'"""
+  sort_by = request.args.get("sort_by", "title")  # default: sort by title
 
-    if sort_by == "title":
-        books = BookModel.query.order_by(BookModel.title).all()
-    elif sort_by == "author":
-        books = BookModel.query.join(AuthorModel).order_by(AuthorModel.name).all()
-    else:
-        books = BookModel.query.all()
+  if sort_by == "title":
+      books = BookModel.query.order_by(BookModel.title).all()
+  elif sort_by == "author":
+      books = BookModel.query.join(AuthorModel).order_by(AuthorModel.name).all()
+  else:
+      books = BookModel.query.all()
 
-    for book in books:
-        book.cover_url = get_book_cover(book.isbn)
+  for book in books:
+      book.cover_url = get_book_cover(book.isbn)
 
-    return render_template("home.html", books=books, sort_by=sort_by)
+  return render_template("home.html", books=books, sort_by=sort_by)
+
+
+
+@app.route("/search_books", methods=["GET"])
+def search_books():
+  """search books by name or word in book title"""
+  query = request.args.get("query", "").strip()
+
+  if not query:
+      return render_template("home.html", books=[], message="Please enter a search term.")
+
+  # SQLAlchemy LIKE Query (finds books, with word in title)
+  search_results = BookModel.query.filter(BookModel.title.ilike(f"%{query}%")).all()
+
+  if not search_results:
+      return render_template("home.html", books=[], message="No books found.")
+
+  return render_template("home.html", books=search_results)
+
+
+@app.route("/book/<int:book_id>/delete", methods=["POST"])
+def delete_book(book_id):
+  """delete a book by its id"""
+  book = BookModel.query.get_or_404(book_id)  # get book or 404 Error
+  author = book.author  # save book-author from boook
+
+  db.session.delete(book)
+  db.session.commit()  # delete book
+
+  # If the author has no other books, delete him/her
+  if not author.books:
+    db.session.delete(author)
+    db.session.commit()
+
+  flash("Book deleted successfully!", "success")
+  return redirect(url_for("home"))  # redirect zu home.html
+
 
 if __name__ == "__main__":
   app.run(debug=True)
