@@ -15,6 +15,26 @@
 
     <h1>Library</h1>
 
+    <!-- Button zum Hinzufügen eines Autors -->
+<a href="{{ url_for('add_author') }}">
+  <button>Add Author</button>
+</a>
+
+<!-- Button zum Hinzufügen eines Buches -->
+<a href="{{ url_for('add_book') }}">
+  <button>Add Book</button>
+</a>
+
+    <form action="/search_books" method="GET">
+  <input type="text" name="query" placeholder="Search for a book..." required>
+  <button type="submit">Search</button>
+
+    </form>
+<a href="/" class="cancel-button">Cancel</a>
+    {% if message %}
+  <p>{{ message }}</p>
+    {% endif %}
+
     <label for="sort_by">Sort by:</label>
     <select id="sort_by" onchange="sortBooks()">
         <!-- Jinja2-Syntax zur Auswahl des aktuellen Sortierkriteriums -->
@@ -23,12 +43,19 @@
     </select>
 
 
-    {% for book in books %}
-    <div>
-        <h3>{{ book.title }} by {{ book.author.name }}</h3>
-        <img src="{{ book.cover_url }}" alt="Book Cover" style="width: 150px;">
-    </div>
-    {% endfor %}
+
+
+{% for book in books %}
+<div>
+  <h3>{{ book.title }} (by {{ book.author.name }})</h3>
+  <img src="{{ book.cover_url }}" alt="Book Cover" style="width: 150px;">
+
+  <!-- Delete Button -->
+  <form action="{{ url_for('delete_book', book_id=book.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this book?');">
+    <button type="submit">Delete Book</button>
+  </form>
+</div>
+{% endfor %}
 
 </body>
 </html>
