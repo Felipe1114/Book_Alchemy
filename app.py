@@ -157,10 +157,33 @@ def get_book_cover(isbn):
 			return url
 		
 		# if no book-cover exist, return base cover book.
-		return "/Users/felipepietzsch/Masterschool/Ohne Titel/Book_Alchemy/static/no_book_cover.jpg"
+		return get_absolute_path_for_static_book_cover()
 	
 	except HTTPException as e:
 		handle_HTTPexception(e)
+
+import os
+
+def get_absolute_path_for_static_book_cover():
+	"""
+	Returns the absolute path up to the 'Book_Alchemy' directory.
+	"""
+	# Get the absolute path of the current script
+	current_script_path = os.path.abspath("./static/no_book_cover.jpg")
+	
+	# Navigate up the directory tree until we find 'Book_Alchemy'
+	path_parts = current_script_path.split(os.sep)
+	
+	# Find the index of 'Book_Alchemy' in the path
+	try:
+		book_alchemy_index = path_parts.index('Book_Alchemy')
+	except ValueError:
+		raise HTTPException("The directory 'Book_Alchemy' was not found in the path")
+	
+	# Reconstruct the path up to 'Book_Alchemy'
+	absolute_path = os.path.join(os.sep, *path_parts[:book_alchemy_index + 1])
+	
+	return absolute_path
 
 
 @app.errorhandler(ValidationError)
