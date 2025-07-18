@@ -183,7 +183,8 @@ def get_absolute_path_for_static_book_cover():
 	# Reconstruct the path up to 'Book_Alchemy'
 	absolute_path = os.path.join(os.sep, *path_parts[:book_alchemy_index + 1])
 	
-	return absolute_path
+	# returns the absolute path to 'Book_alchemy' + the path to the 'no_book_cover.jpg'
+	return absolute_path + "/static/no_book_cover.jpg"
 
 
 @app.errorhandler(ValidationError)
